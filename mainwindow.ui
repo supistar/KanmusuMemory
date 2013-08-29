@@ -60,7 +60,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>19</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="file">
@@ -192,6 +192,14 @@
    </property>
    <property name="toolTip">
     <string>captureFleetDetail</string>
+   </property>
+  </action>
+  <action name="actionFullScreen">
+   <property name="text">
+    <string>fullScreen</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
    </property>
   </action>
  </widget>
