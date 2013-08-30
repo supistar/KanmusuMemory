@@ -7,6 +7,7 @@ WebPageOperation::WebPageOperation(QWidget *parent) :
     QWidget(parent)
   ,m_mainFrame(NULL)
   ,q(parent)
+  ,m_body(parent)
   ,m_gameFrame(parent)
   ,m_flashWrap(parent)
   ,m_embed(parent)
@@ -22,9 +23,24 @@ void WebPageOperation::fullScreen(bool isFull)
     if(isFull){
         //normal -> full
 
-        //フレームを最大化
         QWebFrame *frame = m_mainFrame;
-        QWebElement element = frame->findFirstElement(QStringLiteral("#game_frame"));
+
+        //スクロールバー非表示
+        QWebElement element = frame->findFirstElement(QStringLiteral("body"));
+        if (element.isNull()) {
+            qDebug() << tr("failed find target");
+            return;
+        }
+        if(m_body.isEmpty()){
+            m_body.append(QStringLiteral("overflow"), element.styleProperty(QStringLiteral("overflow"), QWebElement::InlineStyle));
+            qDebug() << element.styleProperty(QStringLiteral("overflow"), QWebElement::InlineStyle);
+        }
+        element.setStyleProperty(QStringLiteral("overflow"),QStringLiteral("hidden"));
+
+
+
+        //フレームを最大化
+        element = frame->findFirstElement(QStringLiteral("#game_frame"));
         if (element.isNull()) {
             qDebug() << tr("failed find target");
             //            ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);
@@ -110,7 +126,19 @@ void WebPageOperation::fullScreen(bool isFull)
         //full -> normal
 
         QWebFrame *frame = m_mainFrame;
-        QWebElement element = frame->findFirstElement(QStringLiteral("#game_frame"));
+
+        //スクロールバー表示
+        QWebElement element = frame->findFirstElement(QStringLiteral("body"));
+        if (element.isNull()) {
+            qDebug() << tr("failed find target");
+            return;
+        }
+        //もとに戻す
+        for(int i=0; i<m_body.length(); i++){
+            element.setStyleProperty(m_body.name(i),m_body.value(i));
+        }
+
+        element = frame->findFirstElement(QStringLiteral("#game_frame"));
         if (element.isNull()) {
             qDebug() << tr("failed find target");
             //            ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);

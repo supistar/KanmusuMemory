@@ -594,8 +594,6 @@ MainWindow::MainWindow(QWidget *parent)
             this, SLOT(handleSslErrors(QNetworkReply*,QList<QSslError>)));
     //艦これ読込み
     d->ui.webView->load(QUrl(URL_KANCOLLE));
-    //Webページ管理へ登録
-    m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
 
     connect(this, &MainWindow::destroyed, [this]() {delete d;});
 }
@@ -628,7 +626,7 @@ void MainWindow::handleSslErrors(QNetworkReply *reply, const QList<QSslError> &e
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    static bool prev = isFullScreen();
+    static bool prev = false;//isFullScreen();
 
     if(prev != isFullScreen()){
         if(isFullScreen()){
@@ -638,6 +636,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
             d->ui.menuBar->setVisible(false);
             d->ui.statusBar->setVisible(false);
 
+            m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
             m_webOpe.fullScreen(true);
 
         }else{
@@ -647,6 +646,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
             d->ui.menuBar->setVisible(true);
             d->ui.statusBar->setVisible(true);
 
+            m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
             m_webOpe.fullScreen(false);
         }
     }

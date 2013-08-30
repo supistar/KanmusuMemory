@@ -58,6 +58,7 @@ private:
     QWidget *q;
     QWebFrame *m_mainFrame;
 
+    WebStyle m_body;
     WebStyle m_gameFrame;
     WebStyle m_flashWrap;
     WebStyle m_embed;
