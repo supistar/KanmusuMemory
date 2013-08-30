@@ -19,6 +19,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QNetworkReply>
 #include <QSslError>
+#include "webpageoperation.h"
 
 class MainWindow : public QMainWindow
 {
@@ -30,12 +31,14 @@ private:
     Q_DISABLE_COPY(MainWindow)
     class Private;
     Private *d;
+    WebPageOperation m_webOpe;
 
 protected:
     void closeEvent(QCloseEvent *event);
 
 private slots:
     void handleSslErrors(QNetworkReply* reply, const QList<QSslError> &errors);
+    virtual void resizeEvent(QResizeEvent * event);
 };
 
 #endif // MAINWINDOW_H

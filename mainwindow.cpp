@@ -133,84 +133,7 @@ MainWindow::Private::Private(MainWindow *parent)
     q->addAction(ui.actionFullScreen);
     connect(ui.actionFullScreen, &QAction::triggered, [this]() {
         q->setWindowState(q->windowState() ^ Qt::WindowFullScreen);
-        if(q->windowState() == Qt::WindowFullScreen){
-            //full
-            ui.toolBar->setVisible(false);
-            ui.menuBar->setVisible(false);
-            ui.statusBar->setVisible(false);
-
-            //フレームを最大化
-            QWebFrame *frame = ui.webView->page()->mainFrame();
-            QWebElement element = frame->findFirstElement(QStringLiteral("#game_frame"));
-            if (element.isNull()) {
-                ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);
-                return;
-            }
-            qDebug() << element.styleProperty(QStringLiteral("position"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("top"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("left"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("width"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("height"), QWebElement::InlineStyle);
-            element.setStyleProperty(QStringLiteral("position"),QStringLiteral("absolute"));
-            element.setStyleProperty(QStringLiteral("top"),QStringLiteral("0px"));
-            element.setStyleProperty(QStringLiteral("left"),QStringLiteral("0px"));
-            element.setStyleProperty(QStringLiteral("width"),QString("%1px").arg(q->width()));
-            element.setStyleProperty(QStringLiteral("height"),QString("%1px").arg(q->height()));
-            element.setStyleProperty(QStringLiteral("z-index"),QStringLiteral("10"));
-
-
-
-            //フレームの子供からflashの入ったdivを探して、さらにその中のembedタグを調べる
-            frame = frame->childFrames().first();
-            element = frame->findFirstElement(QStringLiteral("#flashWrap"));
-            if (element.isNull()) {
-                ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);
-                return;
-            }
-            qDebug() << element.styleProperty(QStringLiteral("position"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("top"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("left"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("width"), QWebElement::InlineStyle)
-                        << "," << element.styleProperty(QStringLiteral("height"), QWebElement::InlineStyle);
-            element.setStyleProperty(QStringLiteral("position"),QStringLiteral("absolute"));
-            element.setStyleProperty(QStringLiteral("top"),QStringLiteral("0px"));
-            element.setStyleProperty(QStringLiteral("left"),QStringLiteral("0px"));
-            element.setStyleProperty(QStringLiteral("width"),QString("%1px").arg(q->width()));
-            element.setStyleProperty(QStringLiteral("height"),QString("%1px").arg(q->height()));
-
-            element = element.findFirst(QStringLiteral("embed"));
-            if (element.isNull()) {
-                ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);
-                return;
-            }
-            qDebug() << element.attribute(QStringLiteral("width"))
-                        << "," << element.attribute(QStringLiteral("height"))
-                        << "->" << q->width() << "," << q->height();
-//            element.setStyleProperty(QStringLiteral("position"),QStringLiteral("absolute"));
-//            element.setStyleProperty(QStringLiteral("top"),QStringLiteral("0"));
-//            element.setStyleProperty(QStringLiteral("left"),QStringLiteral("0"));
-//            element.setAttribute(QStringLiteral("width"),QString(q->width()));
-//            element.setAttribute(QStringLiteral("height"),QString(q->height()));
-            element.evaluateJavaScript(QString("this.width='%1'").arg(q->width()));
-            element.evaluateJavaScript(QString("this.height='%1'").arg(q->height()));
-
-            //解説とか消す
-            element = frame->findFirstElement(QStringLiteral("#sectionWrap"));
-            if (element.isNull()) {
-                ui.statusBar->showMessage(tr("failed find target"), STATUS_BAR_MSG_TIME);
-                return;
-            }
-            element.setStyleProperty(QStringLiteral("visibility"),QStringLiteral("hidden"));
-
-
-        }else{
-            //normal
-            ui.toolBar->setVisible(true);
-            ui.menuBar->setVisible(true);
-            ui.statusBar->setVisible(true);
-        }
     });
-
 
     //WebViewの読込み開始
     connect(ui.webView, &QWebView::loadStarted, [this](){
@@ -652,6 +575,7 @@ void MainWindow::Private::captureFleetDetail()
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , d(new Private(this))
+    , m_webOpe(this)
 {
     //ウインドウの位置を復元
     QSettings settings(SETTING_FILE_NAME, SETTING_FILE_FORMAT);
@@ -670,6 +594,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, SLOT(handleSslErrors(QNetworkReply*,QList<QSslError>)));
     //艦これ読込み
     d->ui.webView->load(QUrl(URL_KANCOLLE));
+    //Webページ管理へ登録
+    m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
 
     connect(this, &MainWindow::destroyed, [this]() {delete d;});
 }
@@ -697,4 +623,32 @@ void MainWindow::handleSslErrors(QNetworkReply *reply, const QList<QSslError> &e
                                                                , QMessageBox::Yes | QMessageBox::No);
     if(res == QMessageBox::Yes)
         reply->ignoreSslErrors();
+}
+
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    static bool prev = isFullScreen();
+
+    if(prev != isFullScreen()){
+        if(isFullScreen()){
+            qDebug() << "resize: normal -> full";
+            //full
+            d->ui.toolBar->setVisible(false);
+            d->ui.menuBar->setVisible(false);
+            d->ui.statusBar->setVisible(false);
+
+            m_webOpe.fullScreen(true);
+
+        }else{
+            qDebug() << "resize: full -> normal";
+            //normal
+            d->ui.toolBar->setVisible(true);
+            d->ui.menuBar->setVisible(true);
+            d->ui.statusBar->setVisible(true);
+
+            m_webOpe.fullScreen(false);
+        }
+    }
+    prev = isFullScreen();
 }

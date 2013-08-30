@@ -11,7 +11,8 @@ SOURCES += main.cpp\
     cookiejar.cpp \
     aboutdialog.cpp \
     memorydialog.cpp \
-    timerdialog.cpp
+    timerdialog.cpp \
+    webpageoperation.cpp
 
 HEADERS  += mainwindow.h \
     tweetdialog.h \
@@ -22,7 +23,8 @@ HEADERS  += mainwindow.h \
     aboutdialog.h \
     memorydialog.h \
     timerdialog.h \
-    kanmusumemory_global.h
+    kanmusumemory_global.h \
+    webpageoperation.h
 
 FORMS    += mainwindow.ui \
     tweetdialog.ui \
