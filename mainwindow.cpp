@@ -630,6 +630,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::destroyed, [this]() {delete d;});
 }
 
+bool MainWindow::isFullScreen() const
+{
+    return QMainWindow::isFullScreen();
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     //フルスクリーン解除

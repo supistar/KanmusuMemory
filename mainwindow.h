@@ -27,6 +27,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
 
+    bool isFullScreen() const;
+
 private:
     Q_DISABLE_COPY(MainWindow)
     class Private;
