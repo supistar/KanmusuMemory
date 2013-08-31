@@ -31,7 +31,6 @@ private:
     Q_DISABLE_COPY(MainWindow)
     class Private;
     Private *d;
-    WebPageOperation m_webOpe;
 
 protected:
     void closeEvent(QCloseEvent *event);

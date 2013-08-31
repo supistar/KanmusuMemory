@@ -55,6 +55,7 @@ public:
     void openTweetDialog(const QString &path);     //ツイートダイアログを開く
     void captureCatalog();
     void captureFleetDetail();
+    void setFullScreen();
 
 private:
     QRect getGameRect();
@@ -65,6 +66,7 @@ private:
     bool isShipExist(QRect rect1, QRect rect2);
     MainWindow *q;
     TimerDialog *m_timerDialog;
+    WebPageOperation m_webOpe;
 
 public:
     Ui::MainWindow ui;
@@ -76,6 +78,7 @@ MainWindow::Private::Private(MainWindow *parent)
     : q(parent)
     , settings(SETTING_FILE_NAME, SETTING_FILE_FORMAT)
     , trayIcon(QIcon(":/resources/KanmusuMemory32.png"))
+    , m_webOpe(parent)
 {
     ui.setupUi(q);
     ui.webView->page()->networkAccessManager()->setCookieJar(new CookieJar(q));
@@ -143,6 +146,9 @@ MainWindow::Private::Private(MainWindow *parent)
     connect(ui.webView, &QWebView::loadFinished, [this](bool ok) {
         if (ok) {
             ui.statusBar->showMessage(MainWindow::tr("complete"), STATUS_BAR_MSG_TIME);
+//            if(ui.webView->url().toString().compare(URL_KANCOLLE) == 0){
+//                setFullScreen();
+//            }
         } else {
             ui.statusBar->showMessage(MainWindow::tr("error"), STATUS_BAR_MSG_TIME);
         }
@@ -482,6 +488,7 @@ bool MainWindow::Private::isShipExist(QRect rect1, QRect rect2)
     return result1 & result2;
 }
 
+
 void MainWindow::Private::captureFleetDetail()
 {
     qDebug() << "captureFleetDetail";
@@ -572,10 +579,35 @@ void MainWindow::Private::captureFleetDetail()
     }
 }
 
+void MainWindow::Private::setFullScreen()
+{
+    if(q->isFullScreen()){
+        qDebug() << "resize: normal -> full";
+        //full
+        ui.toolBar->setVisible(false);
+        ui.menuBar->setVisible(false);
+        ui.statusBar->setVisible(false);
+
+        m_webOpe.setMainFrame(ui.webView->page()->mainFrame());
+        m_webOpe.fullScreen(true);
+
+    }else{
+        qDebug() << "resize: full -> normal";
+        //normal
+        ui.toolBar->setVisible(true);
+        ui.menuBar->setVisible(true);
+        ui.statusBar->setVisible(true);
+
+        m_webOpe.setMainFrame(ui.webView->page()->mainFrame());
+        m_webOpe.fullScreen(false);
+    }
+
+}
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , d(new Private(this))
-    , m_webOpe(this)
 {
     //ウインドウの位置を復元
     QSettings settings(SETTING_FILE_NAME, SETTING_FILE_FORMAT);
@@ -600,6 +632,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    //フルスクリーン解除
+    if(isFullScreen())
+        setWindowState(windowState() ^ Qt::WindowFullScreen);
+
     //ウインドウの位置を保存
     QSettings settings(SETTING_FILE_NAME, SETTING_FILE_FORMAT);
     settings.beginGroup(QStringLiteral(SETTING_MAINWINDOW));
@@ -626,29 +662,10 @@ void MainWindow::handleSslErrors(QNetworkReply *reply, const QList<QSslError> &e
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    static bool prev = false;//isFullScreen();
+    static bool prev = false;
 
     if(prev != isFullScreen()){
-        if(isFullScreen()){
-            qDebug() << "resize: normal -> full";
-            //full
-            d->ui.toolBar->setVisible(false);
-            d->ui.menuBar->setVisible(false);
-            d->ui.statusBar->setVisible(false);
-
-            m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
-            m_webOpe.fullScreen(true);
-
-        }else{
-            qDebug() << "resize: full -> normal";
-            //normal
-            d->ui.toolBar->setVisible(true);
-            d->ui.menuBar->setVisible(true);
-            d->ui.statusBar->setVisible(true);
-
-            m_webOpe.setMainFrame(d->ui.webView->page()->mainFrame());
-            m_webOpe.fullScreen(false);
-        }
+        d->setFullScreen();
     }
     prev = isFullScreen();
 }
