@@ -35,6 +35,8 @@
 #include <QtWebKit/QWebElement>
 #include <QSystemTrayIcon>
 
+#include <QScreen>
+
 #include <QtCore/QDebug>
 
 
@@ -632,7 +634,17 @@ MainWindow::MainWindow(QWidget *parent)
 
 bool MainWindow::isFullScreen() const
 {
-    return QMainWindow::isFullScreen();
+    QDesktopWidget desktop;
+    qDebug() << "num:" << desktop.screenNumber(this);
+    qDebug() << "screen geo:" << desktop.screenGeometry(this);
+    qDebug() << "window geo:" << geometry();
+    if(geometry().width() == desktop.screenGeometry(this).width()
+            && geometry().height() == desktop.screenGeometry(this).height()){
+        return true;
+    }else{
+        return false;
+    }
+//    return QMainWindow::isFullScreen();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
