@@ -20,6 +20,7 @@
 #include "cookiejar.h"
 #include "aboutdialog.h"
 #include "memorydialog.h"
+#include "imageeditdialog.h"
 #include "timerdialog.h"
 #include "gamescreen.h"
 #include "kanmusumemory_global.h"
@@ -55,9 +56,10 @@ class MainWindow::Private
 public:
     Private(MainWindow *parent);
     ~Private();
-    void captureGame();         //保存する
+    void captureGame(bool andEdit = false);         //保存する
     void checkSavePath();       //保存場所の確認
     void openTweetDialog(const QString &path);     //ツイートダイアログを開く
+    void openImageEditDialog(const QString &path, const QString &tempPath);
     void captureCatalog();
     void captureFleetDetail();
     void setFullScreen();
@@ -65,6 +67,7 @@ public:
 private:
     void maskImage(QImage *img, const QRect &rect);
     QString makeFileName(const QString &format) const;
+    QString makeTempFileName(const QString &format) const;
     void clickGame(QPoint pos, bool wait_little = false);
     MainWindow *q;
     TimerDialog *m_timerDialog;
@@ -92,6 +95,7 @@ MainWindow::Private::Private(MainWindow *parent)
 
     //メニュー
     connect(ui.capture, &QAction::triggered, [this](){ captureGame(); });
+    connect(ui.actionCaptureAndEdit, &QAction::triggered, [this]() { captureGame(true); });
 #ifndef DISABLE_CATALOG_AND_DETAIL_FLEET
     connect(ui.captureCatalog, &QAction::triggered, [this](){ captureCatalog(); });
     connect(ui.captureFleetDetail, &QAction::triggered, [this](){ captureFleetDetail(); });
@@ -213,9 +217,17 @@ QString MainWindow::Private::makeFileName(const QString &format) const
             .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd_hh-mm-ss-zzz")))
             .arg(format.toLower());
 }
+//テンポラリのファイル名を作成する
+QString MainWindow::Private::makeTempFileName(const QString &format) const
+{
+    return QStringLiteral("%1/kanmusu_temp.%3")
+            .arg(QDir::tempPath())
+//            .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd_hh-mm-ss-zzz")))
+            .arg(format.toLower());
+}
 
 //思い出を残す
-void MainWindow::Private::captureGame()
+void MainWindow::Private::captureGame(bool andEdit)
 {
     qDebug() << "captureGame";
 
@@ -251,13 +263,30 @@ void MainWindow::Private::captureGame()
     QString path = makeFileName(format);
 //    qDebug() << "path:" << path;
 
-    //保存する
-    ui.statusBar->showMessage(tr("saving to %1...").arg(path), STATUS_BAR_MSG_TIME);
-    if (img.save(path, format.toUtf8().constData())) {
-        //つぶやくダイアログ
-        openTweetDialog(path);
-    } else {
-        ui.statusBar->showMessage(tr("failed save image"), STATUS_BAR_MSG_TIME);
+    if(andEdit){
+        //編集もする
+        QString tempPath = makeTempFileName(format);
+        qDebug() << "temp path:" << tempPath;
+
+        //保存する
+        ui.statusBar->showMessage(tr("saving to %1...").arg(tempPath), STATUS_BAR_MSG_TIME);
+        if (img.save(tempPath, format.toUtf8().constData())) {
+            //編集ダイアログ
+            openImageEditDialog(path, tempPath);
+        } else {
+            ui.statusBar->showMessage(tr("failed save image"), STATUS_BAR_MSG_TIME);
+        }
+    }else{
+        //キャプチャーだけ
+
+        //保存する
+        ui.statusBar->showMessage(tr("saving to %1...").arg(path), STATUS_BAR_MSG_TIME);
+        if (img.save(path, format.toUtf8().constData())) {
+            //つぶやくダイアログ
+            openTweetDialog(path);
+        } else {
+            ui.statusBar->showMessage(tr("failed save image"), STATUS_BAR_MSG_TIME);
+        }
     }
 }
 
@@ -306,7 +335,16 @@ void MainWindow::Private::openTweetDialog(const QString &path)
         settings.setValue(SETTING_GENERAL_SCREEN_NAME, dlg.screen_name());
     }
 }
+//編集ダイアログを開く
+void MainWindow::Private::openImageEditDialog(const QString &path, const QString &tempPath)
+{
+    ImageEditDialog dlg(path, tempPath, QStringLiteral(""), q);
+    dlg.exec();
 
+    //押したボタンによって次の動作を決める
+
+}
+//ゲーム画面へクリックイベントを送る
 void MainWindow::Private::clickGame(QPoint pos, bool wait_little)
 {
     int interval = CLICK_EVENT_INTERVAL;
